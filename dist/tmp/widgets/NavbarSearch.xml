@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<widget id="olari.navbarsearch.NavbarSearch" pluginWidget="true" needsEntityContext="false" offlineCapable="false"
+    supportedPlatform="Web"
+    xmlns="http://www.mendix.com/widget/1.0/"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.mendix.com/widget/1.0/ ../node_modules/mendix/custom_widget.xsd">
+    <name>Navbar Search</name>
+    <description>Server-side search box over any list data source with custom row content and a row click action.</description>
+    <studioProCategory>Input elements</studioProCategory>
+    <studioCategory>Display</studioCategory>
+    <properties>
+        <propertyGroup caption="General">
+            <propertyGroup caption="Data source">
+                <property key="dataSource" type="datasource" isList="true" required="true">
+                    <caption>Data source</caption>
+                    <description>Any entity or view entity. Database and XPath sources are filtered on the server.</description>
+                </property>
+                <property key="searchAttributes" type="object" isList="true" required="true">
+                    <caption>Search attributes</caption>
+                    <description>String attributes matched with 'contains'. Every typed word must match at least one attribute.</description>
+                    <properties>
+                        <propertyGroup caption="Attribute">
+                            <property key="attribute" type="attribute" dataSource="../dataSource" required="true">
+                                <caption>Attribute</caption>
+                                <description>Calculated attributes are not supported.</description>
+                                <attributeTypes>
+                                    <attributeType name="String" />
+                                </attributeTypes>
+                            </property>
+                        </propertyGroup>
+                    </properties>
+                </property>
+                <property key="rowContent" type="widgets" dataSource="dataSource" required="true">
+                    <caption>Row content</caption>
+                    <description>Widgets rendered for each result row.</description>
+                </property>
+            </propertyGroup>
+            <propertyGroup caption="Events">
+                <property key="onRowClick" type="action" dataSource="dataSource" required="false">
+                    <caption>On row click</caption>
+                    <description>Receives the clicked row object.</description>
+                </property>
+            </propertyGroup>
+        </propertyGroup>
+        <propertyGroup caption="Texts">
+            <property key="placeholder" type="textTemplate" required="false">
+                <caption>Placeholder</caption>
+                <description />
+                <translations>
+                    <translation lang="en_US">Search…</translation>
+                </translations>
+            </property>
+            <property key="noResultsContent" type="widgets" required="false">
+                <caption>No results content</caption>
+                <description>Shown when a search returns no rows.</description>
+            </property>
+            <property key="noAccessContent" type="widgets" required="false">
+                <caption>No access content</caption>
+                <description>Shown when the data source returns no rows at all for this user.</description>
+            </property>
+            <property key="showMoreCaption" type="textTemplate" required="false">
+                <caption>Show more caption</caption>
+                <description />
+                <translations>
+                    <translation lang="en_US">Show more</translation>
+                </translations>
+            </property>
+        </propertyGroup>
+        <propertyGroup caption="Behavior">
+            <property key="minChars" type="integer" defaultValue="2">
+                <caption>Minimum characters</caption>
+                <description>Searching starts once this many characters are typed.</description>
+            </property>
+            <property key="debounceMs" type="integer" defaultValue="300">
+                <caption>Debounce (ms)</caption>
+                <description />
+            </property>
+            <property key="pageSize" type="integer" defaultValue="20">
+                <caption>Page size</caption>
+                <description>Rows fetched per page. 'Show more' adds another page.</description>
+            </property>
+            <property key="clearOnSelect" type="boolean" defaultValue="true">
+                <caption>Clear on select</caption>
+                <description>Clear the text after a row is clicked or the dropdown is dismissed.</description>
+            </property>
+            <property key="closeOnOutsideClick" type="boolean" defaultValue="true">
+                <caption>Close on outside click</caption>
+                <description />
+            </property>
+        </propertyGroup>
+        <propertyGroup caption="Common">
+            <systemProperty key="Name" />
+            <systemProperty key="TabIndex" />
+        </propertyGroup>
+    </properties>
+</widget>
