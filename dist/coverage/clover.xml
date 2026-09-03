@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1788460008030" clover="3.2.0">
-  <project timestamp="1788460008030" name="All files">
+<coverage generated="1788462035927" clover="3.2.0">
+  <project timestamp="1788462035927" name="All files">
     <metrics statements="45" coveredstatements="42" conditionals="42" coveredconditionals="39" methods="6" coveredmethods="6" elements="93" coveredelements="87" complexity="0" loc="45" ncloc="45" packages="1" files="3" classes="3"/>
     <file name="buildFilter.ts" path="C:\Users\willi\Mendix\MyPluggableWidgets\olari.navbarsearch\src\utils\buildFilter.ts">
       <metrics statements="8" coveredstatements="8" conditionals="8" coveredconditionals="8" methods="3" coveredmethods="3"/>

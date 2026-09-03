@@ -37,6 +37,7 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
 
     const resetDataSource = useCallback(() => {
         searchRequestRef.current = 0;
+        pendingRef.current = null;
         dataSource.setFilter(undefined);
         dataSource.setLimit(0);
     }, [dataSource]);
@@ -47,11 +48,20 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // A request is "pending" from the moment we call setFilter/setLimit until the datasource hands us a NEW
+    // response. The old props (status "available", stale items) are still there when the effects below first run,
+    // so we only consume once we have seen a loading status or a different items array than at request time.
+    const pendingRef = useRef<{ itemsAtRequest: ObjectItem[] | undefined; sawLoading: boolean } | null>(null);
+    const markRequest = useCallback(() => {
+        pendingRef.current = { itemsAtRequest: dataSource.items, sawLoading: false };
+    }, [dataSource]);
+
     // Probe: unfiltered, limit 1.
     useEffect(() => {
         if (state.phase !== "probing") {
             return;
         }
+        markRequest();
         dataSource.setFilter(undefined);
         dataSource.setLimit(1);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -59,9 +69,21 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
 
     // Consume datasource results.
     useEffect(() => {
+        const pending = pendingRef.current;
+        if (!pending) {
+            return;
+        }
+        if (dataSource.status === "loading") {
+            pending.sawLoading = true;
+            return;
+        }
         if (dataSource.status !== "available" || !dataSource.items) {
             return;
         }
+        if (!pending.sawLoading && dataSource.items === pending.itemsAtRequest) {
+            return; // still the stale response from before the request
+        }
+        pendingRef.current = null;
         if (state.phase === "probing") {
             dispatch({ type: "probeResult", hasAccess: dataSource.items.length > 0 });
             dataSource.setLimit(0);
@@ -78,11 +100,12 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
         (text: string) => {
             const filter = buildFilter(tokenize(text), attributes);
             searchRequestRef.current += 1;
+            markRequest();
             dataSource.setFilter(filter);
             dataSource.setLimit(pageSize);
             dispatch({ type: "searchDispatched", pageSize });
         },
-        [attributes, dataSource, pageSize]
+        [attributes, dataSource, markRequest, pageSize]
     );
 
     const onChange = useCallback(
@@ -123,8 +146,9 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
 
     const onShowMore = useCallback(() => {
         dispatch({ type: "showMore", pageSize });
+        markRequest();
         dataSource.setLimit(state.limit + pageSize);
-    }, [dataSource, pageSize, state.limit]);
+    }, [dataSource, markRequest, pageSize, state.limit]);
 
     const items = useMemo(() => (state.loaded ? dataSource.items ?? [] : []), [state.loaded, dataSource.items]);
     const loading = state.open && (state.phase === "searching" || dataSource.status === "loading");
