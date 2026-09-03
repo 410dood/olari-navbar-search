@@ -35,6 +35,18 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
     // > 0 while the datasource is serving a search request (as opposed to the probe or the initial mount).
     const searchRequestRef = useRef(0);
 
+    // A request is "pending" from the moment we call setFilter/setLimit until the datasource hands us a NEW
+    // response. The old props (status "available", stale items) are still there when the effects below first run,
+    // so we only consume once we have seen a loading status or a different items array than at request time.
+    const pendingRef = useRef(false);
+    const itemsAtRequestRef = useRef<ObjectItem[] | undefined>(undefined);
+    const sawLoadingRef = useRef(false);
+    const markRequest = useCallback(() => {
+        pendingRef.current = true;
+        itemsAtRequestRef.current = dataSource.items;
+        sawLoadingRef.current = false;
+    }, [dataSource]);
+
     const resetDataSource = useCallback(() => {
         searchRequestRef.current = 0;
         pendingRef.current = false;
@@ -47,18 +59,6 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
         dataSource.setLimit(0);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    // A request is "pending" from the moment we call setFilter/setLimit until the datasource hands us a NEW
-    // response. The old props (status "available", stale items) are still there when the effects below first run,
-    // so we only consume once we have seen a loading status or a different items array than at request time.
-    const pendingRef = useRef(false);
-    const itemsAtRequestRef = useRef<ObjectItem[] | undefined>(undefined);
-    const sawLoadingRef = useRef(false);
-    const markRequest = useCallback(() => {
-        pendingRef.current = true;
-        itemsAtRequestRef.current = dataSource.items;
-        sawLoadingRef.current = false;
-    }, [dataSource]);
 
     // Probe: unfiltered, limit 1.
     useEffect(() => {
