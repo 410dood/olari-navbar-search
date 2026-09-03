@@ -37,7 +37,7 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
 
     const resetDataSource = useCallback(() => {
         searchRequestRef.current = 0;
-        pendingRef.current = null;
+        pendingRef.current = false;
         dataSource.setFilter(undefined);
         dataSource.setLimit(0);
     }, [dataSource]);
@@ -51,9 +51,13 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
     // A request is "pending" from the moment we call setFilter/setLimit until the datasource hands us a NEW
     // response. The old props (status "available", stale items) are still there when the effects below first run,
     // so we only consume once we have seen a loading status or a different items array than at request time.
-    const pendingRef = useRef<{ itemsAtRequest: ObjectItem[] | undefined; sawLoading: boolean } | null>(null);
+    const pendingRef = useRef(false);
+    const itemsAtRequestRef = useRef<ObjectItem[] | undefined>(undefined);
+    const sawLoadingRef = useRef(false);
     const markRequest = useCallback(() => {
-        pendingRef.current = { itemsAtRequest: dataSource.items, sawLoading: false };
+        pendingRef.current = true;
+        itemsAtRequestRef.current = dataSource.items;
+        sawLoadingRef.current = false;
     }, [dataSource]);
 
     // Probe: unfiltered, limit 1.
@@ -69,21 +73,20 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
 
     // Consume datasource results.
     useEffect(() => {
-        const pending = pendingRef.current;
-        if (!pending) {
+        if (!pendingRef.current) {
             return;
         }
         if (dataSource.status === "loading") {
-            pendingRef.current = { ...pending, sawLoading: true };
+            sawLoadingRef.current = true;
             return;
         }
         if (dataSource.status !== "available" || !dataSource.items) {
             return;
         }
-        if (!pending.sawLoading && dataSource.items === pending.itemsAtRequest) {
+        if (!sawLoadingRef.current && dataSource.items === itemsAtRequestRef.current) {
             return; // still the stale response from before the request
         }
-        pendingRef.current = null;
+        pendingRef.current = false;
         if (state.phase === "probing") {
             dispatch({ type: "probeResult", hasAccess: dataSource.items.length > 0 });
             dataSource.setLimit(0);
