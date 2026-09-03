@@ -74,7 +74,7 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
             return;
         }
         if (dataSource.status === "loading") {
-            pending.sawLoading = true;
+            pendingRef.current = { ...pending, sawLoading: true };
             return;
         }
         if (dataSource.status !== "available" || !dataSource.items) {

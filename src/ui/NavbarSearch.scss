@@ -19,7 +19,8 @@
             center / contain no-repeat;
     }
 
-    &__input {
+    &__input,
+    &__input.form-control {
         padding-left: 32px;
         width: 100%;
     }
