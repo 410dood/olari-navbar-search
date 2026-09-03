@@ -48,6 +48,12 @@ describe("searchReducer", () => {
             2
         );
     });
+    it("resultsLoaded marks loaded; close with clear resets it", () => {
+        const loaded = reducer({ ...s0, phase: "searching" }, { type: "resultsLoaded", count: 2 });
+        expect(loaded.loaded).toBe(true);
+        expect(reducer(loaded, { type: "close", clear: true }).loaded).toBe(false);
+        expect(reducer(loaded, { type: "type", text: "j", minChars: 2 }).loaded).toBe(false);
+    });
     it("showMore adds a page", () => {
         expect(reducer({ ...s0, limit: 20 }, { type: "showMore", pageSize: 20 }).limit).toBe(40);
     });

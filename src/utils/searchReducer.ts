@@ -10,6 +10,8 @@ export interface SearchState {
     hasAccess: boolean | null;
     /** current datasource limit */
     limit: number;
+    /** true once a search request has produced rows (kept while the next search loads) */
+    loaded: boolean;
 }
 
 export type Action =
@@ -29,7 +31,8 @@ export const initialState = (): SearchState => ({
     open: false,
     highlight: -1,
     hasAccess: null,
-    limit: 0
+    limit: 0,
+    loaded: false
 });
 
 export function reducer(s: SearchState, a: Action): SearchState {
@@ -51,7 +54,7 @@ export function reducer(s: SearchState, a: Action): SearchState {
                 return { ...s, text: a.text };
             }
             if (a.text.trim().length < a.minChars) {
-                return { ...s, text: a.text, phase: "idle", open: false, highlight: -1 };
+                return { ...s, text: a.text, phase: "idle", open: false, highlight: -1, loaded: false };
             }
             return { ...s, text: a.text, phase: "searching", open: true };
         }
@@ -59,9 +62,14 @@ export function reducer(s: SearchState, a: Action): SearchState {
             return { ...s, limit: a.pageSize };
         case "resultsLoaded":
             if (a.count === 0) {
-                return { ...s, phase: "empty", highlight: -1 };
+                return { ...s, phase: "empty", highlight: -1, loaded: true };
             }
-            return { ...s, phase: "results", highlight: s.highlight >= 0 && s.highlight < a.count ? s.highlight : 0 };
+            return {
+                ...s,
+                phase: "results",
+                loaded: true,
+                highlight: s.highlight >= 0 && s.highlight < a.count ? s.highlight : 0
+            };
         case "showMore":
             return { ...s, limit: s.limit + a.pageSize };
         case "moveHighlight": {
@@ -74,7 +82,7 @@ export function reducer(s: SearchState, a: Action): SearchState {
         case "close":
         case "select":
             return a.clear
-                ? { ...s, text: "", phase: "idle", open: false, highlight: -1, limit: 0 }
+                ? { ...s, text: "", phase: "idle", open: false, highlight: -1, limit: 0, loaded: false }
                 : { ...s, open: false, highlight: -1 };
         default:
             return s;

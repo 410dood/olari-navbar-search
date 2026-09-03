@@ -17,21 +17,26 @@ export default function NavbarSearch(props: NavbarSearchContainerProps): ReactEl
     const listboxId = `${id}-listbox`;
     const attributes = useMemo(() => props.searchAttributes.map(s => s.attribute), [props.searchAttributes]);
 
+    const { onRowClick } = props;
+    const onSelectItem = useCallback(
+        (item: ObjectItem) => {
+            const action = onRowClick?.get(item);
+            if (action?.canExecute) {
+                action.execute();
+            }
+        },
+        [onRowClick]
+    );
+
     const search = useNavbarSearch({
         dataSource: props.dataSource,
         attributes,
         minChars: props.minChars,
         debounceMs: props.debounceMs,
         pageSize: props.pageSize,
-        clearOnSelect: props.clearOnSelect
+        clearOnSelect: props.clearOnSelect,
+        onSelectItem
     });
-
-    search.onSelectItem.current = (item: ObjectItem) => {
-        const action = props.onRowClick?.get(item);
-        if (action?.canExecute) {
-            action.execute();
-        }
-    };
 
     const { close } = search;
     const onOutside = useCallback(() => close(), [close]);

@@ -1,4 +1,4 @@
-import { KeyboardEvent, MutableRefObject, useCallback, useEffect, useLayoutEffect, useReducer, useRef } from "react";
+import { KeyboardEvent, useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } from "react";
 import { ListAttributeValue, ListValue, ObjectItem } from "mendix";
 import { buildFilter } from "../utils/buildFilter";
 import { tokenize } from "../utils/tokenize";
@@ -11,6 +11,8 @@ export interface UseNavbarSearchArgs {
     debounceMs: number;
     pageSize: number;
     clearOnSelect: boolean;
+    /** Invoked with the row object when a row is clicked or chosen with Enter. */
+    onSelectItem: (item: ObjectItem) => void;
 }
 
 export interface UseNavbarSearch {
@@ -24,22 +26,17 @@ export interface UseNavbarSearch {
     onShowMore: () => void;
     close: () => void;
     select: (item: ObjectItem) => void;
-    /** Set by the container so Enter / click can invoke the row action. */
-    onSelectItem: MutableRefObject<(item: ObjectItem) => void>;
 }
 
 export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
-    const { dataSource, attributes, minChars, debounceMs, pageSize, clearOnSelect } = args;
+    const { dataSource, attributes, minChars, debounceMs, pageSize, clearOnSelect, onSelectItem } = args;
     const [state, dispatch] = useReducer(reducer, undefined, initialState);
     const debounceRef = useRef<number | undefined>(undefined);
-    const onSelectItem = useRef<(item: ObjectItem) => void>(() => undefined);
     // > 0 while the datasource is serving a search request (as opposed to the probe or the initial mount).
     const searchRequestRef = useRef(0);
-    const loadedRequestRef = useRef(0);
 
     const resetDataSource = useCallback(() => {
         searchRequestRef.current = 0;
-        loadedRequestRef.current = 0;
         dataSource.setFilter(undefined);
         dataSource.setLimit(0);
     }, [dataSource]);
@@ -72,7 +69,6 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
         }
         const searchPhase = state.phase === "searching" || state.phase === "results" || state.phase === "empty";
         if (searchPhase && searchRequestRef.current > 0) {
-            loadedRequestRef.current = searchRequestRef.current;
             dispatch({ type: "resultsLoaded", count: dataSource.items.length });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -120,9 +116,9 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
             if (clearOnSelect) {
                 resetDataSource();
             }
-            onSelectItem.current(item);
+            onSelectItem(item);
         },
-        [clearOnSelect, resetDataSource]
+        [clearOnSelect, onSelectItem, resetDataSource]
     );
 
     const onShowMore = useCallback(() => {
@@ -130,7 +126,7 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
         dataSource.setLimit(state.limit + pageSize);
     }, [dataSource, pageSize, state.limit]);
 
-    const items = searchRequestRef.current > 0 && loadedRequestRef.current > 0 ? dataSource.items ?? [] : [];
+    const items = useMemo(() => (state.loaded ? dataSource.items ?? [] : []), [state.loaded, dataSource.items]);
     const loading = state.open && (state.phase === "searching" || dataSource.status === "loading");
     const hasMore = !!dataSource.hasMoreItems;
 
@@ -167,5 +163,5 @@ export function useNavbarSearch(args: UseNavbarSearchArgs): UseNavbarSearch {
 
     const onFocus = useCallback(() => dispatch({ type: "focus" }), []);
 
-    return { state, items, loading, hasMore, onFocus, onChange, onKeyDown, onShowMore, close, select, onSelectItem };
+    return { state, items, loading, hasMore, onFocus, onChange, onKeyDown, onShowMore, close, select };
 }
